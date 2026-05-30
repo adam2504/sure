@@ -66,6 +66,19 @@
         <% unless category.parent? %>
           <%= f.select :parent_id, categories.pluck(:name, :id), { include_blank: "(unassigned)", label: "Parent category (optional)" }, disabled: category.parent?, data: { action: "change->category#handleParentChange" } %>
         <% end %>
+        <% unless category.subcategory? %>
+          <div class="space-y-1">
+            <label class="form-field__label"><%= t(".classification_label") %></label>
+            <div class="flex gap-3">
+              <% Category::CLASSIFICATIONS.each do |c| %>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <%= f.radio_button :classification, c, class: "cursor-pointer" %>
+                  <span class="text-sm text-primary capitalize"><%= t(".classification_#{c}") %></span>
+                </label>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
       </div>
     </section>
 

@@ -87,6 +87,21 @@ class Account::ProviderImportAdapter
           ActiveModel::Type::Boolean.new.cast(pending_extra.dig("enable_banking", "pending"))
       end
 
+      # Guard: if this external_id was already auto-claimed by a posted transaction in this
+      # or a previous sync, skip re-import. Without this, a pending tx whose external_id was
+      # reassigned to a posted tx's ID gets recreated as a new pending entry on the next
+      # import pass (find_or_initialize_by doesn't find it since the ID changed).
+      if entry.new_record? && incoming_pending
+        already_claimed = account.entries
+          .joins("INNER JOIN transactions ON transactions.id = entries.entryable_id AND entries.entryable_type = 'Transaction'")
+          .where("transactions.extra->'auto_claimed_pending_ids' ? :id", id: external_id)
+          .exists?
+        if already_claimed
+          Rails.logger.info("ProviderImportAdapter: skipping re-import of auto-claimed pending #{external_id} for account #{account.id}")
+          return nil
+        end
+      end
+
       if entry.new_record? && !incoming_pending
         pending_match = nil
 

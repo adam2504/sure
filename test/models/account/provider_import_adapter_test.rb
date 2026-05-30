@@ -1445,4 +1445,38 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     pending1.reload
     assert_equal "plaid_pending_1", pending1.external_id
   end
+
+  test "skips re-import of pending transaction whose external_id is in auto_claimed_pending_ids" do
+    # Simulate: pending "simplefin_abc" was claimed by posted "simplefin_xyz"
+    # The posted entry now has auto_claimed_pending_ids: ["simplefin_abc"]
+    posted_entry = @adapter.import_transaction(
+      external_id: "simplefin_xyz",
+      amount: 50.00,
+      currency: "USD",
+      date: Date.today,
+      name: "Coffee Shop",
+      source: "simplefin",
+      extra: { "simplefin" => { "pending" => false, "auto_claimed_pending_ids" => [ "simplefin_abc" ] } }
+    )
+
+    # Manually set auto_claimed_pending_ids (as import_transaction would have after claiming)
+    posted_entry.transaction.update!(
+      extra: posted_entry.transaction.extra.merge("auto_claimed_pending_ids" => [ "simplefin_abc" ])
+    )
+
+    # Now a new sync arrives and tries to re-import the old pending ID "simplefin_abc"
+    # This must be skipped — no new entry should be created
+    assert_no_difference "@account.entries.count" do
+      result = @adapter.import_transaction(
+        external_id: "simplefin_abc",
+        amount: 50.00,
+        currency: "USD",
+        date: Date.today - 1.day,
+        name: "Coffee Shop",
+        source: "simplefin",
+        extra: { "simplefin" => { "pending" => true } }
+      )
+      assert_nil result, "should return nil for already-claimed pending external_id"
+    end
+  end
 end

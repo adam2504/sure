@@ -70,6 +70,7 @@ Only proceed with pull request creation if ALL checks pass.
 - Do not run `touch tmp/restart.txt`
 - Do not run `rails credentials`
 - Do not automatically run migrations
+- ActiveRecord migrations must inherit from `ActiveRecord::Migration[7.2]` — do NOT use version 8.0
 
 ## High-Level Architecture
 

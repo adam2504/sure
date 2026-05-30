@@ -2,7 +2,7 @@
   <%= render "budgets/budget_nav", budget: @budget %>
 <% end %>
 
-<%= content_for :previous_path, edit_budget_path(@budget) %>
+<%= content_for :previous_path, budget_path(@budget) %>
 <%= content_for :cancel_path, budget_path(@budget) %>
 
 <div>
@@ -23,26 +23,52 @@
         <div class="max-w-md mx-auto">
           <%= render "budget_categories/allocation_progress", budget: @budget %>
 
+          <% income_bcs  = @budget_categories.select(&:income_category?) %>
+          <% expense_bcs = @budget_categories.reject(&:income_category?) %>
+
           <div class="space-y-4 mb-4">
-            <% BudgetCategory::Group.for(@budget_categories).sort_by(&:name).each do |group| %>
-              <div class="space-y-4">
-                <%= render "budget_categories/budget_category_form", budget_category: group.budget_category %>
-
-                <div class="space-y-4">
-                  <% group.budget_subcategories.each do |budget_subcategory| %>
-                    <div class="w-full flex items-center gap-4">
-                      <div class="ml-4 flex items-center justify-center text-subdued">
-                        <%= icon("corner-down-right") %>
-                      </div>
-
-                      <%= render "budget_categories/budget_category_form", budget_category: budget_subcategory %>
+            <% if income_bcs.any? %>
+              <div class="space-y-2">
+                <h2 class="text-xs font-medium text-secondary uppercase px-1"><%= t(".income_section") %></h2>
+                <% BudgetCategory::Group.for(income_bcs).sort_by(&:name).each do |group| %>
+                  <div class="space-y-4">
+                    <%= render "budget_categories/budget_category_form", budget_category: group.budget_category, field: :budgeted_income %>
+                    <div class="space-y-4">
+                      <% group.budget_subcategories.each do |budget_subcategory| %>
+                        <div class="w-full flex items-center gap-4">
+                          <div class="ml-4 flex items-center justify-center text-subdued">
+                            <%= icon("corner-down-right") %>
+                          </div>
+                          <%= render "budget_categories/budget_category_form", budget_category: budget_subcategory, field: :budgeted_income %>
+                        </div>
+                      <% end %>
                     </div>
-                  <% end %>
-                </div>
+                  </div>
+                <% end %>
               </div>
             <% end %>
 
-            <%= render "budget_categories/uncategorized_budget_category_form", budget: @budget %>
+            <div class="space-y-2">
+              <% if income_bcs.any? %>
+                <h2 class="text-xs font-medium text-secondary uppercase px-1"><%= t(".expense_section") %></h2>
+              <% end %>
+              <% BudgetCategory::Group.for(expense_bcs).sort_by(&:name).each do |group| %>
+                <div class="space-y-4">
+                  <%= render "budget_categories/budget_category_form", budget_category: group.budget_category %>
+                  <div class="space-y-4">
+                    <% group.budget_subcategories.each do |budget_subcategory| %>
+                      <div class="w-full flex items-center gap-4">
+                        <div class="ml-4 flex items-center justify-center text-subdued">
+                          <%= icon("corner-down-right") %>
+                        </div>
+                        <%= render "budget_categories/budget_category_form", budget_category: budget_subcategory %>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+              <%= render "budget_categories/uncategorized_budget_category_form", budget: @budget %>
+            </div>
           </div>
 
           <%= render "budget_categories/confirm_button", budget: @budget %>

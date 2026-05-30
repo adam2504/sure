@@ -1,0 +1,6 @@
+---
+en:
+  budget_categories:
+    index:
+      income_section: Income categories
+      expense_section: Expense categories

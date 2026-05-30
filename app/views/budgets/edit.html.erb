@@ -17,7 +17,13 @@
     <div class="mx-auto max-w-lg">
       <%= styled_form_with model: @budget, class: "space-y-3", data: { controller: "budget-form" } do |f| %>
         <%= f.money_field :budgeted_spending, label: "Budgeted spending", required: true, disable_currency: true %>
-        <%= f.money_field :expected_income, label: "Expected income", required: true, disable_currency: true %>
+        <% if @budget.income_budget_categories.none? %>
+          <%= f.money_field :expected_income, label: "Expected income", required: true, disable_currency: true %>
+        <% else %>
+          <div class="border border-tertiary rounded-lg p-3 text-sm text-secondary">
+            Income is budgeted per category. Set amounts in the next step.
+          </div>
+        <% end %>
 
         <% if @budget.estimated_income && @budget.estimated_spending %>
           <div class="border border-tertiary rounded-lg p-3 flex">

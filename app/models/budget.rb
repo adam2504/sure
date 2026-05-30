@@ -14,7 +14,8 @@ class Budget < ApplicationRecord
 
   monetize :budgeted_spending, :expected_income, :allocated_spending,
            :actual_spending, :available_to_spend, :available_to_allocate,
-           :estimated_spending, :estimated_income, :actual_income, :remaining_expected_income
+           :estimated_spending, :estimated_income, :actual_income, :remaining_expected_income,
+           :budgeted_income
 
   class << self
     def date_to_param(date)
@@ -139,7 +140,7 @@ class Budget < ApplicationRecord
   end
 
   def initialized?
-    budgeted_spending.present?
+    budgeted_spending.present? || allocated_spending > 0
   end
 
   def most_recent_initialized_budget
@@ -167,7 +168,10 @@ class Budget < ApplicationRecord
         target_bc = target_by_category[source_bc.category_id]
         next unless target_bc
 
-        target_bc.update!(budgeted_spending: source_bc.budgeted_spending)
+        target_bc.update!(
+          budgeted_spending: source_bc.budgeted_spending,
+          budgeted_income: source_bc.budgeted_income
+        )
       end
     end
   end
@@ -247,13 +251,14 @@ class Budget < ApplicationRecord
   end
 
   def available_to_spend
-    (budgeted_spending || 0) - actual_spending
+    (budgeted_spending.presence || allocated_spending) - actual_spending
   end
 
   def percent_of_budget_spent
-    return 0 unless budgeted_spending > 0
+    total = budgeted_spending.presence || allocated_spending
+    return 0 unless total > 0
 
-    (actual_spending / budgeted_spending.to_f) * 100
+    (actual_spending / total.to_f) * 100
   end
 
   def overage_percent
@@ -270,28 +275,54 @@ class Budget < ApplicationRecord
   end
 
   def allocated_percent
-    return 0 unless budgeted_spending && budgeted_spending > 0
+    return 100 unless budgeted_spending.present? && budgeted_spending > 0
 
     (allocated_spending / budgeted_spending.to_f) * 100
   end
 
   def available_to_allocate
-    (budgeted_spending || 0) - allocated_spending
+    return 0 unless budgeted_spending.present?
+    budgeted_spending - allocated_spending
   end
 
   def allocations_valid?
-    initialized? && available_to_allocate >= 0 && allocated_spending > 0
+    allocated_spending > 0
   end
 
   # =============================================================================
   # Income: How much user earned relative to what they expected to earn
   # =============================================================================
+  def income_budget_categories
+    budget_categories.select(&:income_category?)
+  end
+
+  def expense_budget_categories
+    budget_categories.reject(&:income_category?)
+  end
+
+  # Total budgeted income across all income categories
+  def budgeted_income
+    income_budget_categories.sum(&:budgeted_income)
+  end
+
+  # If income categories are set, derive expected_income from their sum.
+  # Otherwise fall back to the manually-stored value (backwards compatibility).
+  def expected_income
+    income_bcs = income_budget_categories
+    income_bcs.any? ? income_bcs.sum(&:budgeted_income) : (self[:expected_income] || 0)
+  end
+
   def estimated_income
     family.income_statement.median_income(interval: "month")
   end
 
   def actual_income
     family.income_statement.income_totals(period: self.period).total
+  end
+
+  def budget_category_actual_income(budget_category)
+    key = budget_category.category_id || stable_synthetic_key(budget_category.category)
+    income_totals_by_category[key]&.total || 0
   end
 
   def actual_income_percent

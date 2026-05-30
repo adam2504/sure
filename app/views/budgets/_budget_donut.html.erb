@@ -13,12 +13,12 @@
         </div>
 
         <%= render DS::Link.new(
-          text: "of #{budget.budgeted_spending_money.format}",
+          text: "of #{budget.allocated_spending_money.format}",
           variant: "secondary",
           icon: "pencil",
           icon_position: "right",
           size: "sm",
-          href: edit_budget_path(budget)
+          href: budget_budget_categories_path(budget)
         ) %>
       <% else %>
         <div class="text-subdued text-3xl mb-2 privacy-sensitive">
@@ -29,7 +29,7 @@
           text: "New budget",
           size: "sm",
           icon: "plus",
-          href: edit_budget_path(budget)
+          href: budget_budget_categories_path(budget)
         ) %>
       <% end %>
     </div>

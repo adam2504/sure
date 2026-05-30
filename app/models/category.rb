@@ -8,13 +8,17 @@ class Category < ApplicationRecord
   has_many :subcategories, class_name: "Category", foreign_key: :parent_id, dependent: :nullify
   belongs_to :parent, class_name: "Category", optional: true
 
+  CLASSIFICATIONS = %w[income expense].freeze
+
   validates :name, :color, :lucide_icon, :family, presence: true
   validates :color, format: { with: /\A#[0-9A-Fa-f]{6}\z/ }
   validates :name, uniqueness: { scope: :family_id }
+  validates :classification, inclusion: { in: CLASSIFICATIONS }
 
   validate :category_level_limit
 
   before_save :inherit_color_from_parent
+  before_save :inherit_classification_from_parent
 
   scope :alphabetically, -> { order(:name) }
   scope :alphabetically_by_hierarchy, -> {
@@ -24,9 +28,8 @@ class Category < ApplicationRecord
       .order(:name)
   }
   scope :roots, -> { where(parent_id: nil) }
-  # Legacy scopes - classification removed; these now return all categories
-  scope :incomes, -> { all }
-  scope :expenses, -> { all }
+  scope :incomes,  -> { where(classification: "income") }
+  scope :expenses, -> { where(classification: "expense") }
 
   COLORS = %w[#e99537 #4da568 #6471eb #db5a54 #df4e92 #c44fe9 #eb5429 #61c9ea #805dee #6ad28a]
 
@@ -139,10 +142,11 @@ class Category < ApplicationRecord
     end
 
     def bootstrap!
-      default_categories.each do |name, color, icon|
+      default_categories.each do |name, color, icon, classification|
         find_or_create_by!(name: name) do |category|
           category.color = color
           category.lucide_icon = icon
+          category.classification = classification || "expense"
         end
       end
     end
@@ -197,7 +201,7 @@ class Category < ApplicationRecord
     private
       def default_categories
         [
-          [ "Income", "#22c55e", "circle-dollar-sign" ],
+          [ "Income", "#22c55e", "circle-dollar-sign", "income" ],
           [ "Food & Drink", "#f97316", "utensils" ],
           [ "Groceries", "#407706", "shopping-bag" ],
           [ "Shopping", "#3b82f6", "shopping-cart" ],
@@ -223,9 +227,23 @@ class Category < ApplicationRecord
       end
   end
 
+  def income?
+    classification == "income"
+  end
+
+  def expense?
+    classification == "expense"
+  end
+
   def inherit_color_from_parent
     if subcategory?
       self.color = parent.color
+    end
+  end
+
+  def inherit_classification_from_parent
+    if subcategory?
+      self.classification = parent.classification
     end
   end
 

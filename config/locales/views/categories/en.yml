@@ -14,6 +14,9 @@ en:
       edit: Edit category
     form:
       placeholder: Category name
+      classification_label: Type
+      classification_income: Income
+      classification_expense: Expense
     index:
       bootstrap: Use defaults (recommended)
       categories: Categories

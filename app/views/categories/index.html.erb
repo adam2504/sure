@@ -22,7 +22,14 @@
 <div class="bg-container rounded-xl shadow-border-xs p-4">
   <% if @categories.any? %>
     <div class="space-y-4">
-      <%= render "categories/category_list_group", title: t(".categories"), categories: @categories %>
+      <% income_categories = @categories.select(&:income?) %>
+      <% expense_categories = @categories.reject(&:income?) %>
+      <% if income_categories.any? %>
+        <%= render "categories/category_list_group", title: t(".categories_incomes"), categories: income_categories %>
+      <% end %>
+      <% if expense_categories.any? %>
+        <%= render "categories/category_list_group", title: t(".categories_expenses"), categories: expense_categories %>
+      <% end %>
     </div>
   <% else %>
     <div class="flex justify-center items-center py-20">

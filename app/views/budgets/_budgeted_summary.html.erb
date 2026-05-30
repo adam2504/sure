@@ -35,7 +35,7 @@
     <h3 class="text-sm text-secondary mb-2">Budgeted</h3>
 
     <span class="inline-block mb-2 text-xl font-medium text-primary privacy-sensitive">
-      <%= format_money(budget.budgeted_spending_money) %>
+      <%= format_money(budget.budgeted_spending.present? ? budget.budgeted_spending_money : budget.allocated_spending_money) %>
     </span>
 
     <div>

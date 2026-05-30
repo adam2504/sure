@@ -1,5 +1,5 @@
 class BudgetsController < ApplicationController
-  before_action :set_budget, only: %i[show edit update copy_previous]
+  before_action :set_budget, only: %i[show edit copy_previous]
 
   def index
     redirect_to_current_month_budget
@@ -10,11 +10,6 @@ class BudgetsController < ApplicationController
   end
 
   def edit
-    render layout: "wizard"
-  end
-
-  def update
-    @budget.update!(budget_params)
     redirect_to budget_budget_categories_path(@budget)
   end
 
@@ -45,10 +40,6 @@ class BudgetsController < ApplicationController
 
     def budget_create_params
       params.require(:budget).permit(:start_date)
-    end
-
-    def budget_params
-      params.require(:budget).permit(:budgeted_spending, :expected_income)
     end
 
     def set_budget

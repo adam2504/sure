@@ -2,6 +2,7 @@ class BudgetCategoriesController < ApplicationController
   before_action :set_budget
 
   def index
+    @budget.sync_budget_categories
     @budget_categories = @budget.budget_categories.includes(:category)
     render layout: "wizard"
   end
@@ -31,7 +32,12 @@ class BudgetCategoriesController < ApplicationController
 
   def update
     @budget_category = Current.family.budget_categories.find(params[:id])
-    @budget_category.update_budgeted_spending!(budgeted_spending_param)
+
+    if @budget_category.income_category?
+      @budget_category.update!(budgeted_income: budgeted_income_param)
+    else
+      @budget_category.update_budgeted_spending!(budgeted_spending_param)
+    end
 
     respond_to do |format|
       format.turbo_stream
@@ -46,6 +52,13 @@ class BudgetCategoriesController < ApplicationController
       params.require(:budget_category)
         .permit(:budgeted_spending)
         .fetch(:budgeted_spending, nil)
+        .presence || 0
+    end
+
+    def budgeted_income_param
+      params.require(:budget_category)
+        .permit(:budgeted_income)
+        .fetch(:budgeted_income, nil)
         .presence || 0
     end
 
