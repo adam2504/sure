@@ -33,7 +33,9 @@ class BudgetCategoriesController < ApplicationController
   def update
     @budget_category = Current.family.budget_categories.find(params[:id])
 
-    if @budget_category.income_category?
+    if params[:budget_category][:excluded].present?
+      @budget_category.update!(excluded: params[:budget_category][:excluded] == "true")
+    elsif @budget_category.income_category?
       @budget_category.update!(budgeted_income: budgeted_income_param)
     else
       @budget_category.update_budgeted_spending!(budgeted_spending_param)

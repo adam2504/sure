@@ -6,6 +6,8 @@ class BudgetCategory < ApplicationRecord
 
   validates :budget_id, uniqueness: { scope: :category_id }
 
+  scope :included, -> { where(excluded: false) }
+
   monetize :budgeted_spending, :budgeted_income, :available_to_spend, :avg_monthly_expense, :median_monthly_expense, :actual_spending, :actual_income
 
   class Group

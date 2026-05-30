@@ -292,6 +292,10 @@ class Budget < ApplicationRecord
   # =============================================================================
   # Income: How much user earned relative to what they expected to earn
   # =============================================================================
+  def excluded_category_ids
+    budget_categories.where(excluded: true).pluck(:category_id)
+  end
+
   def income_budget_categories
     budget_categories.select(&:income_category?)
   end

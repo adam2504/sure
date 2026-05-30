@@ -8,9 +8,13 @@ class TransactionsController < ApplicationController
     prefill_params_from_duplicate!
     super
     apply_duplicate_attributes!
-    @income_categories = Current.family.categories.incomes.alphabetically
-    @expense_categories = Current.family.categories.expenses.alphabetically
-    @categories = Current.family.categories.alphabetically
+    date = params.dig(:entry, :date)&.to_date || Date.current
+    load_categories_for_date(date)
+  end
+
+  def show
+    super
+    load_categories_for_date(@entry.date)
   end
 
   def index
@@ -393,6 +397,14 @@ class TransactionsController < ApplicationController
   end
 
   private
+    def load_categories_for_date(date)
+      budget = Current.family.budgets.find_by("start_date <= ? AND end_date >= ?", date, date)
+      excluded_ids = budget ? budget.excluded_category_ids : []
+      @income_categories = Current.family.categories.incomes.where.not(id: excluded_ids).alphabetically
+      @expense_categories = Current.family.categories.expenses.where.not(id: excluded_ids).alphabetically
+      @categories = Current.family.categories.where.not(id: excluded_ids).alphabetically
+    end
+
     def accessible_transactions
       Current.family.transactions
         .joins(entry: :account)

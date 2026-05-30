@@ -2,8 +2,9 @@
 
 <% currency = Money::Currency.new(budget_category.budget.currency) %>
 <% is_income = (field == :budgeted_income) %>
+<% is_excluded = budget_category.excluded? %>
 
-<div id="<%= dom_id(budget_category, :form) %>" class="w-full flex gap-3">
+<div id="<%= dom_id(budget_category, :form) %>" class="w-full flex gap-3 <%= "opacity-40" if is_excluded %>">
   <div class="w-1 h-3 rounded-xl mt-1" style="background-color: <%= budget_category.category.color %>"></div>
 
   <div class="text-sm mr-3">
@@ -13,21 +14,34 @@
     <% end %>
   </div>
 
-  <div class="ml-auto">
-    <%= form_with model: [budget_category.budget, budget_category], data: { controller: "auto-submit-form preserve-focus" } do |f| %>
-      <div class="form-field w-[120px]">
-        <div class="flex items-center privacy-sensitive privacy-sensitive-interactive">
-          <span class="text-secondary text-sm mr-2"><%= currency.symbol %></span>
-          <%= f.number_field field,
-                            class: "form-field__input text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
-                            placeholder: (!is_income && budget_category.subcategory?) ? "Shared" : "0",
-                            step: currency.step,
-                            id: dom_id(budget_category, field),
-                            min: 0,
-                            data: { auto_submit_form_target: "auto" },
-                            title: (!is_income && budget_category.subcategory?) ? "Leave empty to share parent's budget" : nil %>
+  <div class="ml-auto flex items-center gap-2">
+    <%= form_with model: [budget_category.budget, budget_category],
+          data: { controller: "auto-submit-form" } do |f| %>
+      <%= f.hidden_field :excluded, value: is_excluded ? "false" : "true" %>
+      <%= button_tag type: "submit",
+            class: "text-secondary hover:text-primary transition-colors",
+            title: is_excluded ? "Include category" : "Exclude category",
+            data: { auto_submit_form_target: "auto" } do %>
+        <%= icon(is_excluded ? "eye-off" : "eye", size: "sm") %>
+      <% end %>
+    <% end %>
+
+    <% unless is_excluded %>
+      <%= form_with model: [budget_category.budget, budget_category], data: { controller: "auto-submit-form preserve-focus" } do |f| %>
+        <div class="form-field w-[120px]">
+          <div class="flex items-center privacy-sensitive privacy-sensitive-interactive">
+            <span class="text-secondary text-sm mr-2"><%= currency.symbol %></span>
+            <%= f.number_field field,
+                              class: "form-field__input text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+                              placeholder: (!is_income && budget_category.subcategory?) ? "Shared" : "0",
+                              step: currency.step,
+                              id: dom_id(budget_category, field),
+                              min: 0,
+                              data: { auto_submit_form_target: "auto" },
+                              title: (!is_income && budget_category.subcategory?) ? "Leave empty to share parent's budget" : nil %>
+          </div>
         </div>
-      </div>
+      <% end %>
     <% end %>
   </div>
 </div>
